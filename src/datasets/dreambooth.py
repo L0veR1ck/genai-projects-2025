@@ -8,16 +8,16 @@ class DreamBoothTrainDataset(BaseDataset):
         self.placeholder_token = placeholder_token
         self.class_name = class_name
         index = []
-        
+
         for file_path in Path(data_path).iterdir():
             if file_path.suffix in IMG_EXTENTIONS:
                 index.append(file_path)
-                
+
         super().__init__(index, *args, **kwargs)
 
     def __getitem__(self, ind):
         file_path = self._index[ind]
-        
+
         instance_data  = {
             "original_sizes": [1024, 1024],
             "crop_top_lefts": [0, 0],
@@ -34,17 +34,17 @@ class DreamBoothLivingSmall(BaseDataset):
         self.class_name = class_name
         index = [
             "a photo of a {0}",
-            "a {0} in a purple wizard outfit",
-            "a {0} in a watercolor painting style",
-            "a {0} with the Eiffel Tower in the background",
-            "a {0} riding a bike",
+            # "a {0} in a purple wizard outfit",
+            # "a {0} in a watercolor painting style",
+            # "a {0} with the Eiffel Tower in the background",
+            # "a {0} riding a bike",
         ]
 
         self.images = []
         for file_path in Path(data_path).iterdir():
             if file_path.suffix in IMG_EXTENTIONS:
                 self.images.append(self.load_object(file_path))
-            
+
         super().__init__(index, *args, **kwargs)
 
     def __getitem__(self, ind):
@@ -55,6 +55,3 @@ class DreamBoothLivingSmall(BaseDataset):
             "class_prompt": prompt.format(self.placeholder_token)
         }
         return instance_data
-                
-            
-        

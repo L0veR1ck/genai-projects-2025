@@ -139,11 +139,21 @@ class BaseInferencer(BaseTrainer):
 class LoraInferencer(BaseInferencer):
     @torch.no_grad()
     def process_evaluation_batch(self, batch, eval_metrics):
-        # generate images via pipeline
-        # TO DO
-        # 
-        # generated_images = ...
-        # batch['generated'] = generated_images
+        # Set model to eval mode
+        self.model.unet.eval()
+        
+        # Generate images via pipeline
+        generated_images = self.pipe(
+            prompt=batch["prompt"],
+            negative_prompt=self.config.validation_args.negative_prompt,
+            num_images_per_prompt=self.config.validation_args.num_images_per_prompt,
+            num_inference_steps=self.config.validation_args.num_inference_steps,
+            guidance_scale=self.config.validation_args.guidance_scale,
+            height=self.config.validation_args.height,
+            width=self.config.validation_args.width,
+        ).images
+        
+        batch['generated'] = generated_images
         
         for metric in self.metrics:
             metric_result = metric(**batch)
@@ -153,3 +163,18 @@ class LoraInferencer(BaseInferencer):
         self.store_batch(generated_images, batch["prompt"])
                 
         return batch
+    
+    def _log_batch(self, batch_idx, batch, mode="train"):
+        """
+        Log data from batch. Calls self.writer.add_* to log data
+        to the experiment tracker.
+
+        Args:
+            batch_idx (int): index of the current batch.
+            batch (dict): dict-based batch after going through
+                the 'process_batch' function.
+            mode (str): train or inference. Defines which logging
+                rules to apply.
+        """
+        # For inference, we can skip batch logging as we save images to disk
+        pass

@@ -27,15 +27,41 @@ class LoraTrainer(BaseTrainer):
                 the dataloader (possibly transformed via batch transform),
                 model outputs, and losses.
         """
-        # model forward, backward, opt step and etc.
-        #
-        # TO DO 
-        # 
-        # model_output = ...
-        # batch.update(model_output)
-        # losses = ...
-        # batch.uodate(losses)
+        # Apply batch transforms if available
+        if self.batch_transforms is not None:
+            batch = self.batch_transforms(batch)
         
+        # Set model to train mode
+        self.model.unet.train()
+        
+        # Determine if we should use CFG for this step
+        do_cfg = (batch["batch_idx"] % self.cfg_step == 0)
+        
+        # Forward pass through model
+        model_output = self.model(
+            pixel_values=batch["pixel_values"],
+            prompt=batch["prompt"],
+            do_cfg=do_cfg,
+            original_sizes=batch.get("original_sizes"),
+            crop_top_lefts=batch.get("crop_top_lefts"),
+        )
+        
+        batch.update(model_output)
+        
+        # Compute loss
+        losses = self.criterion(**batch)
+        batch.update(losses)
+        
+        # Backward pass
+        self.optimizer.zero_grad()
+        batch["loss"].backward()
+        
+        # Clip gradients if needed
+        self._clip_grad_norm()
+        
+        # Optimizer step
+        self.optimizer.step()
+        self.lr_scheduler.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
@@ -46,11 +72,21 @@ class LoraTrainer(BaseTrainer):
 
     @torch.no_grad()
     def process_evaluation_batch(self, batch, eval_metrics):
-        # generate images via pipeline
-        # TO DO
-        # 
-        # generated_images = ...
-        # batch['generated'] = generated_images
+        # Set model to eval mode
+        self.model.unet.eval()
+        
+        # Generate images via pipeline
+        generated_images = self.pipe(
+            prompt=batch["prompt"],
+            negative_prompt=self.config.validation_args.negative_prompt,
+            num_images_per_prompt=self.config.validation_args.num_images_per_prompt,
+            num_inference_steps=self.config.validation_args.num_inference_steps,
+            guidance_scale=self.config.validation_args.guidance_scale,
+            height=self.config.validation_args.height,
+            width=self.config.validation_args.width,
+        ).images
+        
+        batch['generated'] = generated_images
 
         for metric in self.metrics:
             metric_result = metric(**batch)

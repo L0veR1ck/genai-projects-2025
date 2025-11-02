@@ -21,7 +21,7 @@ loss_function:
 lr_for_unet: 1e-4
 
 train_dataset_name: "dreambooth"
-val_datasets_names: ["db_liv_small"]
+val_datasets_names: ["dreambooth"]
 
 inference_metrics: ["dino", "clip_ts"]
 
@@ -35,5 +35,3 @@ validation_args:
   target_size: [1024, 1024]
   original_size: [1024, 1024]
   crops_coords_top_left: [0, 0]
-
-

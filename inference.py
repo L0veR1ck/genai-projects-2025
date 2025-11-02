@@ -7,7 +7,6 @@ from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging_inference
-import datetime
 
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -16,14 +15,13 @@ warnings.filterwarnings("ignore", category=UserWarning)
 @hydra.main(version_base=None, config_path="src/configs", config_name="persongen_inference_lora")
 def main(config):
     """
-    Main script for training. Instantiates the model, optimizer, scheduler,
-    metrics, logger, writer, and dataloaders. Runs Trainer to train and
-    evaluate the model.
+    Main script for inference. Instantiates the model, pipeline,
+    metrics, logger, writer, and dataloaders. Runs Inferencer to
+    generate and evaluate images.
 
     Args:
         config (DictConfig): hydra experiment config.
     """
-    torch.distributed.init_process_group(backend="nccl", timeout=datetime.timedelta(seconds=3600))
     set_random_seed(config.inferencer.seed)
 
     project_config = OmegaConf.to_container(config)
@@ -31,7 +29,7 @@ def main(config):
     logger = setup_saving_and_logging_inference(config)
     writer = instantiate(config.writer, logger, project_config)
 
-    device = torch.device(config.trainer.device)
+    device = torch.device(config.inferencer.device)
 
     # setup data_loader instances
     # batch_transforms should be put on device

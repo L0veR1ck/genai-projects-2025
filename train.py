@@ -25,7 +25,7 @@ def main(config):
     set_random_seed(config.trainer.seed)
 
     project_config = OmegaConf.to_container(config)
-    
+
     logger = setup_saving_and_logging(config)
     writer = instantiate(config.writer, logger, project_config)
 
@@ -50,7 +50,7 @@ def main(config):
     # build optimizer, learning rate scheduler
     trainable_params = model.get_trainable_params(config)
     optimizer = instantiate(config.optimizer, params=trainable_params)
-    
+
     for i, group in enumerate(optimizer.param_groups):
         logger.info(f"Param group <{group['name']}>:")
         logger.info(f"  learning rate: {group['lr']}")
@@ -61,7 +61,7 @@ def main(config):
         # list the names or number of params
         logger.info(f"  num params:    {len(group['params'])}")
 
-    lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer) 
+    lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
 
 
     pipeline = instantiate(
@@ -69,7 +69,7 @@ def main(config):
         model=model,
         device=device
     )
-        
+
     trainer = instantiate(
         config.trainer,
         model=model,
